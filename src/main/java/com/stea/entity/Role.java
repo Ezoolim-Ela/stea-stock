@@ -1,0 +1,25 @@
+package com.stea.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "roles")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class Role {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, unique = true, length = 40)
+    private RoleEnum libelle;
+
+    public enum RoleEnum {
+        ADMINISTRATEUR,
+        OPERATEUR_STOCK,
+        PLANIFICATEUR_TRANSPORT,
+        COMPTABLE
+    }
+}
