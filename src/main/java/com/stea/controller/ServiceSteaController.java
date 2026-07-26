@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/services")
+@CrossOrigin
 @RequiredArgsConstructor
 public class ServiceSteaController {
 

@@ -2,6 +2,7 @@ package com.stea.controller;
 
 import com.stea.dto.*;
 import com.stea.entity.Utilisateur;
+import com.stea.repository.UtilisateurRepository;
 import com.stea.service.ExportService;
 import com.stea.service.MouvementStockService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,6 +25,7 @@ public class MouvementStockController {
 
     private final MouvementStockService mouvementStockService;
     private final ExportService exportService;
+    private final UtilisateurRepository utilisateurRepository;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'OPERATEUR_STOCK', 'COMPTABLE')")
@@ -48,8 +50,10 @@ public class MouvementStockController {
     public ResponseEntity<MouvementStockResponse> create(
             @Valid @RequestBody MouvementStockRequest request,
             Authentication authentication) {
-        UserDetails user = (UserDetails) authentication.getPrincipal();
-        return ResponseEntity.ok(mouvementStockService.create(request, null));
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        Utilisateur user = utilisateurRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
+        return ResponseEntity.ok(mouvementStockService.create(request, user.getId()));
     }
 
     @PutMapping("/{id}")

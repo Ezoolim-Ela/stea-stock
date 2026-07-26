@@ -109,15 +109,23 @@ public class InventaireService {
         InventairePhysique inv = get(id);
         inv.setStatut(InventairePhysique.StatutInventaire.VALIDE);
 
-        List<LigneInventaire> lignesEcarts = ligneInventaireRepository.findByInventaireIdAndEcartNot(id, 0);
-        BigDecimal valeurTotale = BigDecimal.ZERO;
+        List<LigneInventaire> toutesLignes = ligneInventaireRepository.findByInventaireId(id);
+        BigDecimal valeurEcarts = BigDecimal.ZERO;
 
-        for (LigneInventaire ligne : lignesEcarts) {
+        for (LigneInventaire ligne : toutesLignes) {
+            if (ligne.getStatut() == LigneInventaire.StatutLigne.EN_ATTENTE) {
+                continue;
+            }
+
             Article article = ligne.getArticle();
             article.setQuantiteStock(ligne.getQuantitePhysique());
             articleRepository.save(article);
 
             if (ligne.getEcart() != 0) {
+                valeurEcarts = valeurEcarts.add(
+                        BigDecimal.valueOf(ligne.getEcart()).multiply(article.getPrixUnitaire() != null
+                                ? article.getPrixUnitaire() : BigDecimal.ZERO));
+
                 MouvementStock mouvement = MouvementStock.builder()
                         .type(MouvementStock.TypeMouvement.INVENTAIRE)
                         .article(article)
@@ -133,7 +141,7 @@ public class InventaireService {
             }
         }
 
-        inv.setValeurEcarts(valeurTotale);
+        inv.setValeurEcarts(valeurEcarts);
         return inventaireRepository.save(inv);
     }
 

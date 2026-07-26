@@ -1,6 +1,6 @@
 package com.stea.controller;
 
-import com.stea.entity.Notification;
+import com.stea.dto.NotificationResponse;
 import com.stea.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -8,7 +8,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/notifications")
@@ -20,18 +19,14 @@ public class NotificationController {
 
     @GetMapping("/{destinataireId}")
     @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'OPERATEUR_STOCK', 'COMPTABLE')")
-    public ResponseEntity<List<Map<String, Object>>> getNotifications(@PathVariable Long destinataireId) {
-        return ResponseEntity.ok(notificationService.getNotificationsNonLues(destinataireId).stream()
-                .map(n -> {
-                    Map<String, Object> map = new java.util.HashMap<>();
-                    map.put("id", n.getId());
-                    map.put("message", n.getMessage());
-                    map.put("canal", n.getCanal().name());
-                    map.put("date", n.getCreatedAt());
-                    map.put("lu", n.getStatutLecture() == Notification.StatutLecture.LUE);
-                    return map;
-                })
-                .toList());
+    public ResponseEntity<List<NotificationResponse>> getNotifications(@PathVariable Long destinataireId) {
+        return ResponseEntity.ok(notificationService.getNotificationsNonLues(destinataireId));
+    }
+
+    @GetMapping("/all/{destinataireId}")
+    @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'OPERATEUR_STOCK', 'COMPTABLE')")
+    public ResponseEntity<List<NotificationResponse>> getAllNotifications(@PathVariable Long destinataireId) {
+        return ResponseEntity.ok(notificationService.getAllNotifications(destinataireId));
     }
 
     @GetMapping("/{destinataireId}/compter")
@@ -44,6 +39,13 @@ public class NotificationController {
     @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'OPERATEUR_STOCK', 'COMPTABLE')")
     public ResponseEntity<Void> marquerLue(@PathVariable Long id) {
         notificationService.marquerCommeLue(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/tout-lire/{destinataireId}")
+    @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'OPERATEUR_STOCK', 'COMPTABLE')")
+    public ResponseEntity<Void> toutLire(@PathVariable Long destinataireId) {
+        notificationService.lireToutes(destinataireId);
         return ResponseEntity.ok().build();
     }
 }

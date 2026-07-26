@@ -24,9 +24,13 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "Utilisateur non trouvé avec l'email : " + email));
 
+        if (user.getStatut() == Utilisateur.StatutEnum.EN_ATTENTE) {
+            throw new UsernameNotFoundException(
+                    "Votre compte est en attente de validation par un administrateur");
+        }
         if (user.getStatut() != Utilisateur.StatutEnum.ACTIF) {
             throw new UsernameNotFoundException(
-                    "Compte " + user.getStatut().name().toLowerCase() + " : accès refusé");
+                    "Compte " + user.getStatut().name().toLowerCase() + " : acces refuse");
         }
 
         return new User(

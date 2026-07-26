@@ -148,6 +148,9 @@ public class StockService {
             emplacementRepository.findById(emplacementDestId).ifPresent(mouvement::setEmplacementDestination);
         }
 
+        article.setQuantiteStock(article.getQuantiteStock() - quantite);
+        articleRepository.save(article);
+
         return mouvementStockRepository.save(mouvement);
     }
 

@@ -31,6 +31,11 @@ public class Notification {
     @Builder.Default
     private StatutLecture statutLecture = StatutLecture.NON_LUE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    @Builder.Default
+    private TypeNotification type = TypeNotification.SYSTEME;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -41,5 +46,9 @@ public class Notification {
 
     public enum StatutLecture {
         LUE, NON_LUE
+    }
+
+    public enum TypeNotification {
+        STOCK_FAIBLE, COMMANDE, LIVRAISON, SYSTEME, ALERTE, PAIEMENT, UTILISATEUR
     }
 }

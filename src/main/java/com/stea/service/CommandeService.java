@@ -97,16 +97,28 @@ public class CommandeService {
         Article article = articleRepository.findById(request.getArticleId())
                 .orElseThrow(() -> new IllegalArgumentException("Article introuvable : " + request.getArticleId()));
 
-        LigneCommande ligne = LigneCommande.builder()
-                .commande(commande)
-                .article(article)
-                .quantite(request.getQuantite())
-                .prixUnitaire(request.getPrixUnitaire())
-                .sousTotal(request.getPrixUnitaire().multiply(BigDecimal.valueOf(request.getQuantite())))
-                .build();
+        LigneCommande existing = commande.getLignes().stream()
+                .filter(l -> l.getArticle().getId().equals(request.getArticleId()))
+                .findFirst()
+                .orElse(null);
 
-        commande.getLignes().add(ligne);
-        commande.setTotal(commande.getTotal().add(ligne.getSousTotal()));
+        if (existing != null) {
+            BigDecimal oldSousTotal = existing.getSousTotal();
+            existing.setQuantite(existing.getQuantite() + request.getQuantite());
+            existing.setPrixUnitaire(request.getPrixUnitaire());
+            existing.setSousTotal(request.getPrixUnitaire().multiply(BigDecimal.valueOf(existing.getQuantite())));
+            commande.setTotal(commande.getTotal().subtract(oldSousTotal).add(existing.getSousTotal()));
+        } else {
+            LigneCommande ligne = LigneCommande.builder()
+                    .commande(commande)
+                    .article(article)
+                    .quantite(request.getQuantite())
+                    .prixUnitaire(request.getPrixUnitaire())
+                    .sousTotal(request.getPrixUnitaire().multiply(BigDecimal.valueOf(request.getQuantite())))
+                    .build();
+            commande.getLignes().add(ligne);
+            commande.setTotal(commande.getTotal().add(ligne.getSousTotal()));
+        }
 
         return toResponse(commandeRepository.save(commande));
     }
@@ -160,6 +172,7 @@ public class CommandeService {
                     .destinataire(logisticien)
                     .canal(Notification.Canal.IN_APP)
                     .message(message)
+                    .type(Notification.TypeNotification.PAIEMENT)
                     .build());
         }
 

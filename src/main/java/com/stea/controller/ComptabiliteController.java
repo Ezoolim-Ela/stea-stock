@@ -2,6 +2,8 @@ package com.stea.controller;
 
 import com.stea.entity.Commande;
 import com.stea.entity.Livraison;
+import com.stea.entity.Utilisateur;
+import com.stea.repository.UtilisateurRepository;
 import com.stea.service.ComptabiliteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import java.util.List;
 public class ComptabiliteController {
 
     private final ComptabiliteService comptabiliteService;
+    private final UtilisateurRepository utilisateurRepository;
 
     @GetMapping("/commandes/non-payees")
     @PreAuthorize("hasRole('COMPTABLE')")
@@ -32,7 +35,7 @@ public class ComptabiliteController {
         return ResponseEntity.ok(comptabiliteService.getCommandesPayeesPartiellement());
     }
 
-    @GetMapping("/commandes/payeess")
+    @GetMapping("/commandes/payees")
     @PreAuthorize("hasRole('COMPTABLE')")
     public ResponseEntity<List<Commande>> getCommandesPayees() {
         return ResponseEntity.ok(comptabiliteService.getCommandesPayees());
@@ -51,8 +54,9 @@ public class ComptabiliteController {
             @RequestParam(required = false) String observation,
             Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        Long comptableId = 1L;
-        return ResponseEntity.ok(comptabiliteService.validerPaiementCommande(id, comptableId, observation));
+        Utilisateur user = utilisateurRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
+        return ResponseEntity.ok(comptabiliteService.validerPaiementCommande(id, user.getId(), observation));
     }
 
     @PostMapping("/livraisons/{id}/valider-paiement")
@@ -62,8 +66,9 @@ public class ComptabiliteController {
             @RequestParam(required = false) String observation,
             Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        Long comptableId = 1L;
-        return ResponseEntity.ok(comptabiliteService.validerPaiementLivraison(id, comptableId, observation));
+        Utilisateur user = utilisateurRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
+        return ResponseEntity.ok(comptabiliteService.validerPaiementLivraison(id, user.getId(), observation));
     }
 
     @PostMapping("/livraisons/{id}/refuser-paiement")
@@ -73,7 +78,8 @@ public class ComptabiliteController {
             @RequestParam(required = false) String observation,
             Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        Long comptableId = 1L;
-        return ResponseEntity.ok(comptabiliteService.refuserPaiementLivraison(id, comptableId, observation));
+        Utilisateur user = utilisateurRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
+        return ResponseEntity.ok(comptabiliteService.refuserPaiementLivraison(id, user.getId(), observation));
     }
 }

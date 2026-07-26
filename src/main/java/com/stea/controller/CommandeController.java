@@ -1,6 +1,8 @@
 package com.stea.controller;
 
 import com.stea.dto.*;
+import com.stea.entity.Utilisateur;
+import com.stea.repository.UtilisateurRepository;
 import com.stea.service.CommandeService;
 import com.stea.service.ExportService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +25,7 @@ public class CommandeController {
 
     private final CommandeService commandeService;
     private final ExportService exportService;
+    private final UtilisateurRepository utilisateurRepository;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'COMPTABLE', 'OPERATEUR_STOCK', 'PLANIFICATEUR_TRANSPORT')")
@@ -41,8 +46,13 @@ public class CommandeController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATEUR', 'OPERATEUR_STOCK', 'PLANIFICATEUR_TRANSPORT', 'COMPTABLE')")
-    public ResponseEntity<CommandeResponse> create(@Valid @RequestBody CommandeRequest request) {
-        return ResponseEntity.ok(commandeService.create(request, null));
+    public ResponseEntity<CommandeResponse> create(
+            @Valid @RequestBody CommandeRequest request,
+            Authentication authentication) {
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        Utilisateur user = utilisateurRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
+        return ResponseEntity.ok(commandeService.create(request, user.getId()));
     }
 
     @PostMapping("/{id}/lignes")

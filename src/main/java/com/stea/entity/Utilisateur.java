@@ -22,7 +22,7 @@ public class Utilisateur {
     @Column(nullable = false, length = 150)
     private String identite;
 
-    @Column(nullable = false, unique = true, length = 150)
+    @Column(unique = true, length = 150)
     private String email;
 
     @Column(nullable = false)
@@ -49,6 +49,6 @@ public class Utilisateur {
     private LocalDateTime updatedAt;
 
     public enum StatutEnum {
-        ACTIF, SUSPENDU, INACTIF
+        ACTIF, EN_ATTENTE, SUSPENDU, INACTIF
     }
 }

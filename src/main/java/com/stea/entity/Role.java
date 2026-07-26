@@ -20,6 +20,7 @@ public class Role {
         ADMINISTRATEUR,
         OPERATEUR_STOCK,
         PLANIFICATEUR_TRANSPORT,
-        COMPTABLE
+        COMPTABLE,
+        LOGISTICIEN
     }
 }

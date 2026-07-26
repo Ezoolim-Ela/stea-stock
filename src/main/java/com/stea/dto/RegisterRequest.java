@@ -13,7 +13,6 @@ public class RegisterRequest {
     @Size(max = 150)
     private String identite;
 
-    @NotBlank(message = "L'email est requis")
     @Email(message = "Format d'email invalide")
     private String email;
 

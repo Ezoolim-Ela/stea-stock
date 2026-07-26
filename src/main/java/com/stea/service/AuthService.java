@@ -14,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,13 +28,23 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponse login(LoginRequest request) {
+        Utilisateur user = utilisateurRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Email ou mot de passe incorrect"));
+
+        if (user.getStatut() == Utilisateur.StatutEnum.EN_ATTENTE) {
+            throw new IllegalArgumentException("Votre compte est en attente de validation par un administrateur");
+        }
+        if (user.getStatut() == Utilisateur.StatutEnum.SUSPENDU) {
+            throw new IllegalArgumentException("Votre compte a ete suspendu. Contactez un administrateur");
+        }
+        if (user.getStatut() == Utilisateur.StatutEnum.INACTIF) {
+            throw new IllegalArgumentException("Votre compte est desactive. Contactez un administrateur");
+        }
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getMotDePasse()));
 
         String jwt = jwtProvider.generateToken(authentication);
-
-        Utilisateur user = utilisateurRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
 
         user.setDateDerniereConnexion(LocalDateTime.now());
         utilisateurRepository.save(user);
@@ -41,22 +53,54 @@ public class AuthService {
     }
 
     public UtilisateurResponse register(RegisterRequest request) {
-        if (utilisateurRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Un compte existe déjà avec cet email");
+        if (request.getEmail() != null && !request.getEmail().isBlank()
+                && utilisateurRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Un compte existe deja avec cet email");
         }
 
-        Role role = roleRepository.findByLibelle(Role.RoleEnum.valueOf(request.getRole()))
-                .orElseThrow(() -> new IllegalArgumentException("Rôle invalide : " + request.getRole()));
+        Role role;
+        if (request.getRole() != null) {
+            role = roleRepository.findByLibelle(Role.RoleEnum.valueOf(request.getRole()))
+                    .orElseThrow(() -> new IllegalArgumentException("Role invalide : " + request.getRole()));
+        } else {
+            role = roleRepository.findByLibelle(Role.RoleEnum.OPERATEUR_STOCK)
+                    .orElseThrow(() -> new IllegalArgumentException("Role par defaut introuvable"));
+        }
 
         Utilisateur user = Utilisateur.builder()
                 .identite(request.getIdentite())
                 .email(request.getEmail())
-                .motDePasse(passwordEncoder.encode(request.getMotDePasse()))
+                .motDePasse(request.getMotDePasse())
                 .role(role)
-                .statut(Utilisateur.StatutEnum.ACTIF)
+                .statut(Utilisateur.StatutEnum.EN_ATTENTE)
                 .build();
 
         return mapToResponse(utilisateurRepository.save(user));
+    }
+
+    public List<UtilisateurResponse> getPendingInscriptions() {
+        return utilisateurRepository.findByStatut(Utilisateur.StatutEnum.EN_ATTENTE)
+                .stream().map(AuthService::mapToResponse).collect(Collectors.toList());
+    }
+
+    public UtilisateurResponse approuverInscription(Long userId) {
+        Utilisateur user = utilisateurRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
+        if (user.getStatut() != Utilisateur.StatutEnum.EN_ATTENTE) {
+            throw new IllegalArgumentException("Cet utilisateur n'est pas en attente de validation");
+        }
+        user.setStatut(Utilisateur.StatutEnum.ACTIF);
+        return mapToResponse(utilisateurRepository.save(user));
+    }
+
+    public UtilisateurResponse rejeterInscription(Long userId) {
+        Utilisateur user = utilisateurRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
+        if (user.getStatut() != Utilisateur.StatutEnum.EN_ATTENTE) {
+            throw new IllegalArgumentException("Cet utilisateur n'est pas en attente de validation");
+        }
+        utilisateurRepository.delete(user);
+        return mapToResponse(user);
     }
 
     public static UtilisateurResponse mapToResponse(Utilisateur user) {

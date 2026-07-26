@@ -19,6 +19,8 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     List<Utilisateur> findByRoleLibelleAndStatut(Role.RoleEnum roleLibelle, Utilisateur.StatutEnum statut);
 
+    List<Utilisateur> findByStatut(Utilisateur.StatutEnum statut);
+
     @Query("SELECT u FROM Utilisateur u WHERE " +
            "(:search IS NULL OR LOWER(u.identite) LIKE LOWER(CONCAT('%',:search,'%')) " +
            "OR LOWER(u.email) LIKE LOWER(CONCAT('%',:search,'%'))) " +
